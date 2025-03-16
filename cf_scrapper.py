@@ -14,6 +14,21 @@ logging.basicConfig(
     ]
 )
 
+
+def get_problem_links_from_error_log():
+    try:
+        with open("error.log", "r") as file:
+            lines = file.readlines()
+            problem_links = []
+            for line in lines:
+                if "ERROR - Error fetching problem statement for " in line:
+                    problem_links.append(line.split(": ")[0].strip().split(" ")[-1].strip())
+            return problem_links
+    except Exception as e:
+        print(f"[error] Error reading error log: {e}")
+        logging.error(f"Error reading error log: {e}")
+        return None
+    
 def get_problem_statement(problem_link):
     try:
         headers = {
@@ -21,7 +36,7 @@ def get_problem_statement(problem_link):
             "Accept": "text/html",
             "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
             "Accept-Encoding": "gzip",
-            "Referer": "https://www.google.com/",
+            "Referer": "https://google.com/",
         }
         response = requests.get(problem_link, headers=headers)
         if response.status_code != 200:
@@ -77,8 +92,8 @@ def list_problems():
 if __name__ == "__main__":
     problems = list_problems()
     ## cluster wise
-    problems_ = problems['result']['problems'][0:15]
-    
+    problems_ = problems['result']['problems'][9500:]
+    i = True
     if problems and 'result' in problems:
         ## replace problems['result']['problems'] with problems_ to fetch like cluster wise
         for problem in problems_ :
@@ -92,11 +107,15 @@ if __name__ == "__main__":
 
                 print(f"[info] Fetching problem: {problem_name} ({problem_link})")
                 problem_statement = get_problem_statement(problem_link)
-                
+
                 if problem_statement:
                     df = pd.DataFrame(columns=['contest_id', 'problem_index', 'problem_name', 'problem_rating', 'problem_tags', 'problem_statement'], 
                                       data=[[contest_id, problem_index, problem_name, problem_rating, problem_tags, problem_statement]])
-                    df.to_csv('problems.csv', mode='a', header=False, index=False)
+                    if i == False:
+                        df.to_csv('problems.csv', mode='a', header=True, index=False)
+                        i = True
+                    else:
+                        df.to_csv('problems.csv', mode='a', header=False, index=False)
 
                     print(f"[success] Problem {problem_name} fetched successfully")
                 time.sleep(5)
